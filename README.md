@@ -1,1 +1,8 @@
-EA for Keyboard Layout
+# Keyboard Optimization & Permutations
+When using Evolutionary Algorithms, one particularly important aspect of applying such an EA is the choice of **encoding**. In many cases the encoding used is trivial, for example a mapping from positions on a  string to the variables used within evaluation. Such encodings are commonplace, and you have already (potentially unknowingly) encountered them.
+
+However, as discussed in the second lecture, the right encoding can however provide significant benefits to the performance of an EA! Specific encodings can be used to avoid infeasible solutions by construction, bias the search space towards regions of interest, or allow for better & more effective recombination. In this assignment we utilize various encodings (and crossover operators) to investigate their applicability to keyboard optimization, which requires a particularly common (yet constrained) search space: permutations.
+
+Permutations are used to define sequences, orderings of preference, or unique one-to-one mappings. If you ever had a problem that takes such a input, we generally use a permutation to describe them. The trivial way to 'encode' permutations is a discrete search space, assigning a value 1 through the string length for each position. This approach does however not deal with the uniqueness constraint. The search space therefore also includes invalid solutions.
+
+In this assignment we instead investigate different approaches, each with their own benefits and downsides. One of these approaches is to require a solution to always be a valid permutation, requiring our operators to be modified to preserve this property. Alternatively, we use the Random Key encoding which uses a string of continuous variables as encoding, with the encoded permutation being the order that sorts them.
