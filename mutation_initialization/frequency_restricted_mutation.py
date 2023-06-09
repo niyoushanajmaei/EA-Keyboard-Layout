@@ -1,5 +1,11 @@
+
+# We decided to not use this function and turn it into an initialization method instead
+
 def frequency_restricted_mutation(individual: Solution, p: float, k: float):
     """
+    
+    DON'T USE
+    
     Performs a mutation on the individual, with a probability of p or kp, depending on the region and the frequency of the character in English.
     choose 0 < k < 1, 0 < p < 1
     """
