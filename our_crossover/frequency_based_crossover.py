@@ -78,8 +78,6 @@ class FrequencyBasedCrossover():
         return [Solution(children_a), Solution(children_b)]
 
 
-
-    def
     def __init__(self, qap_problem: QAP, shuffle_factor: float):
         """
         Performs an initialization of the individual

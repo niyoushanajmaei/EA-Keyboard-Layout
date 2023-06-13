@@ -2,7 +2,7 @@ from permutationsga.ga import Initialization
 import numpy as np
 from permutationsga.problem import Solution
 
-class FrequencyRestrictedInitialization(Initialization):
+class FrequencyBasedInitialization(Initialization):
 
     def __init__(self, p:int, type: int, high_frequency: list[int], better_region : list[int]):
         """
@@ -22,10 +22,10 @@ class FrequencyRestrictedInitialization(Initialization):
 
     def initialize(self, rng: np.random.Generator, population: list[Solution]):
         for solution in population:
-            self.frequency_restricted_initialization(rng, solution, self.p, self.type, self.high_frequency, self.better_region)
+            self.frequency_based_initialization(rng, solution, self.p, self.type, self.high_frequency, self.better_region)
 
     @staticmethod
-    def frequency_restricted_initialization(rng, individual: Solution, p: float, type : int, high_frequency : list[int], better_region : list[int] ):
+    def frequency_based_initialization(rng, individual: Solution, p: float, type : int, high_frequency : list[int], better_region : list[int] ):
         """
         Performs an initialization of the individual
         Assigns high frequency characters to the better region with probability 1-p and to the inferior region with probability p.
