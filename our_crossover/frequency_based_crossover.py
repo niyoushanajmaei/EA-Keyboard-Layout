@@ -1,51 +1,85 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from permutationsga.problem import Solution
 from permutationsga.qap import QAP, read_qaplib
 
+
+def count_letter_bigram_frequencies(bigram):
+    # We don't care about which letter comes first, therefore we construct a symmetric matrix
+    return bigram + bigram.T
+
+
+def count_letter_frequencies(bigram):
+    # We don't care about which letter comes first, therefore we construct a symmetric matrix
+    symmetric_bigram = bigram + bigram.T
+
+    # Let's see how the frequencies look like
+    plt.imshow(symmetric_bigram)
+    plt.show()
+
+    res = np.zeros(len(symmetric_bigram))
+    for column in range(len(symmetric_bigram)):
+        res[column] = sum(symmetric_bigram[column]) / 2
+    return res
+
+
 class FrequencyBasedCrossover():
 
-    def crossover_freq(indices, s0: Solution, s1: Solution):
+    def greedy_crossover(self, indices, s0: Solution, s1: Solution):
+        """
+        This crossover doesn't work because it returns invalid solutions.
+
+        Idea: Letter combinations that are often used together should come from the same parent.
+        This algorithm tries to greedily maximize the total bigram scores for both of the children.
+        """
         assert s0.e is not None, "Ensure solution s0 is initialized before use."
         assert s1.e is not None, "Ensure solution s1 is initialized before use."
 
-        # Prepare copies, and the inverse to perform lookups on.
-        r0 = np.copy(s0.e)
-        r1 = np.copy(s1.e)
+        # Define children
+        children_a = np.zeros_like(s0.e, dtype=int)
+        children_b = np.zeros_like(s1.e, dtype=int)
 
-        # Note: it is potentially better to keep the number of indices low for this operator,
-        #       as it copies over multiple anyways (possibly covering the entire permutation)
-        for s in indices:
-            # Cycle crossover copies over more indices in order to preserve uniqueness.
-            # Specifically, it copies over a cycle. Example:
-            # Given two solutions a, b:
-            #  a:  [0, 1, 2, 3, 4]
-            #  b:  [4, 2, 3, 1, 0]
-            # (idx) 0  1  2  3  4
-            # First of all, we choose to cross over index 1, leading to a duplicate 2.
-            #  a:  [0, 2, 2, 3, 4]
-            #  b:  [4, 1, 3, 1, 0]
-            # (idx) 0  1  2  3  4
-            # In order to avoid duplicates, we swap the original position of two as well.
-            # Leading to a duplicate 3.
-            #  a:  [0, 2, 3, 3, 4]
-            #  b:  [4, 1, 2, 1, 0]
-            # (idx) 0  1  2  3  4
-            # Again, swapping the position with the original 3, we swap the position that originally had a one
-            # Which was actually our starting point! (hence: does not exist, was replaced!)
-            #  a:  [0, 2, 3, 1, 4]
-            #  b:  [4, 1, 2, 3, 0]
-            # (idx) 0  1  2  3  4
-            # and finally back to the start: where a 1 occurred in a (no change neccessary: already OK).
-            # We end up with a valid solution again.
+        # Shows which elements of the children_a are coming from which parent
+        children_a_ingredients = {
+            0: [],
+            1: []
+        }
 
-            r0[s], r1[s] = r1[s], r0[s]
-            invalidated_idx = s
-            # Also keep track of the index that was removed, this one should be reintroduced at the end
-            # of a cycle
-          
+        # Shows which elements of the children_b are coming from which parent
+        children_b_ingredients = {
+            0: [],
+            1: []
+        }
 
-        return [Solution(r0), Solution(r1)]
+        # Find the optimal order for performing swaps
+        order = self.find_order(s0.e, s1.e)
 
+        # For each location in genotype either swap it or not
+        for i in order:
+            e0, e1 = s0.e[i], s1.e[i]
+            # Get scores for swapping vs not swapping
+            not_swap_1, swap_1 = self.calculate_score_increase(children_a_ingredients, (e0, e1))
+            not_swap_2, swap_2 = self.calculate_score_increase(children_b_ingredients, (e0, e1))
+
+            if not_swap_1 + not_swap_2 > swap_1 + swap_2:
+                # Not swap elements because not-swapping has higher score
+                children_a_ingredients[0].append(e0)
+                children_b_ingredients[1].append(e1)
+                children_a[i] = e0
+                children_b[i] = e1
+            else:
+                # Swap elements because swapping has higher score
+                children_a_ingredients[1].append(e1)
+                children_b_ingredients[0].append(e0)
+                children_a[i] = e1
+                children_b[i] = e0
+        print("r0:", children_a)
+        print("r1:",children_b)
+        return [Solution(children_a), Solution(children_b)]
+
+
+
+    def
     def __init__(self, qap_problem: QAP, shuffle_factor: float):
         """
         Performs an initialization of the individual
@@ -56,66 +90,50 @@ class FrequencyBasedCrossover():
         type: 0 for the typewrite and 1 for the digital keyboard (First one is the typewriter)
         high_frequency: A list of 9 indices of character with the highest frequency in the language
         """
+
         bigram = qap_problem.B
-        print(bigram)
+
+        self.bi_frequencies = count_letter_bigram_frequencies(bigram)
+        self.frequencies = count_letter_frequencies(bigram)
+
         self.type = type
 
-
-    def initialize(self, rng: np.random.Generator, population: list[Solution]):
-        for solution in population:
-            self.frequency_restricted_initialization(rng, solution, self.p, self.type, self.high_frequency)
-
-    
-    @staticmethod
-    def frequency_restricted_initialization(rng, individual: Solution, p: float, type : int, high_frequency : list[int]):
+    def find_order(self, e0, e1):
         """
-        Performs an initialization of the individual
-        Assigns high frequency characters to the better region with probability 1-p and to the inferior region with probability p.
-        Assign the rest randomly
-        choose p to be small
-        
-        type: 0 for the typewrite and 1 for the digital keyboard (First one is the typewriter)
-        high_frequency: A list of 9 indices of character with the highest frequency in the language
+        Try to find the best order of considering the elements by sorting indices among these two children genomes
+        that place highly frequent letter locations first.
+         """
+
+        multi = np.add(self.frequencies[e0], self.frequencies[e1])
+        sorted_indices = np.argsort(multi)[::-1]
+        return sorted_indices
+
+    def calculate_score_increase(self, children_ingredients, new_pair):
         """
-        
-        individual.e = np.array([-1 for i in range(26)])
+        We want to maximize the total frequency of letters that are coming from the same parent
 
-        # Assuming middle row is always better. Both in the digital keyboard and the typewriter
-        if type == 0:
-            better_region_indices = [i for i in range(10, 19)]
-        else:
-            better_region_indices = [i for i in range(10, 19)] 
+        Score increase is calculated by summing the letter frequencies with all elements of the children (that have
+        already been selected)
+        """
+        # Score increase if we don't swap the elements
+        score_no_swap = 0
+        score_with_swap = 0
+        for element in children_ingredients[0]:
+            # Calculate the score for the elements in children coming from the first parent
+            score_no_swap += self.bi_frequencies[element][new_pair[0]]
+            score_with_swap += self.bi_frequencies[element][new_pair[1]]
+        for element in children_ingredients[1]:
+            # Calculate the score for the elements in children coming from the second parent
+            score_no_swap += self.bi_frequencies[element][new_pair[1]]
+            score_with_swap += self.bi_frequencies[element][new_pair[0]]
+        return score_no_swap, score_with_swap
 
-        worse_region_indices = [i for i in range(26) if i not in better_region_indices]
-
-        for char in high_frequency:
-            if rng.random() < p:
-                # assign to an inferior region
-                while(True):
-                    rand_ind = rng.integers(low=0, high=len(worse_region_indices), size=1)[0]
-                    loc = worse_region_indices[rand_ind]
-                    if individual.e[loc] == -1:
-                        individual.e[loc] = char
-                        break
-            else:
-                # assign to the better_region
-                while True:
-                    rand_ind = rng.integers(low=0, high=len(better_region_indices), size=1)[0]
-                    loc = better_region_indices[rand_ind]
-                    if individual.e[loc] == -1:
-                        individual.e[loc] = char
-                        break
-
-        for char in [i for i in range(26) if i not in high_frequency]:
-            while True:
-                loc = rng.integers(low=0, high=26, size=1)[0]
-                if individual.e[loc] == -1:
-                    individual.e[loc] = char
-                    break
-
-        return 
-        
 
 if __name__ == "__main__":
-    problem = QAP(*read_qaplib("./instances/qap/bur26a.dat"))
-    cr = FrequencyBasedCrossover(problem,0.2)
+    problem = QAP(*read_qaplib("../instances/qap/bur26a.dat"))
+    cr = FrequencyBasedCrossover(problem, 0.2)
+    x = Solution(np.arange(26))
+    y = Solution(np.arange(26)[::-1])
+    indices = [0, 1, 2]
+    for i in range(10):
+        x, y = cr.greedy_crossover(indices, x, y)
