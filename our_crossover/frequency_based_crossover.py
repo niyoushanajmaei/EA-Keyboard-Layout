@@ -104,7 +104,9 @@ class FrequencyBasedCrossover():
         that place highly frequent letter locations first.
          """
 
-        multi = np.add(self.frequencies[e0], self.frequencies[e1])
+        # Multiply the frequencies of the letters in the two children to find out the indices for which both of the
+        # children are relatively frequent
+        multi = np.multiply(self.frequencies[e0], self.frequencies[e1])
         sorted_indices = np.argsort(multi)[::-1]
         return sorted_indices
 
