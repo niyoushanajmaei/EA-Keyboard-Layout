@@ -45,7 +45,7 @@ l       = problem.get_length()
 class EA_Config:
     def __init__(
             self, pop_size=2**10,   decoder=None,   crossover_fn=crossover_pmx, indices_gen=None, 
-            initialization=None,    selection=None, parent_selection=None) -> None:
+            initialization=None,    selection=None, parent_selection=None,      n_stuck=None) -> None:
         
         self.population_size    = pop_size
         self.crossover_fn       = crossover_fn
@@ -70,6 +70,10 @@ class EA_Config:
         if parent_selection == None:
             parent_selection = SequentialSelector()
         self.parent_selection = parent_selection
+    
+        if n_stuck == None:
+            n_stuck = 3
+        self.n_stuck = n_stuck
 
 
 def gen_ga(cfg: EA_Config):
