@@ -44,7 +44,7 @@ l       = problem.get_length()
 
 class EA_Config:
     def __init__(
-            self, pop_size=2**10,   decoder=None,   crossover_fn=crossover_pmx, indices_gen=None, 
+            self, pop_size=2**11,   decoder=None,   crossover_fn=crossover_pmx, indices_gen=None, 
             initialization=None,    selection=None, parent_selection=None) -> None:
         
         self.population_size    = pop_size
@@ -87,7 +87,7 @@ def gen_ga(cfg: EA_Config):
 
 
 class Exp_Config:
-    def __init__(self, exp_mame, max_gen=100, n_experiments=5, epsilon=10e-6) -> None:
+    def __init__(self, exp_mame, max_gen=100, n_experiments=10, epsilon=10e-6) -> None:
         self.exp_name       = exp_mame
         self.max_gen        = max_gen
         self.n_experiments  = n_experiments
