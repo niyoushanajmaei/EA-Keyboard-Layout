@@ -1,3 +1,2 @@
-instances
-*.pyc
-.idea/*
+/instances/
+**/__pycache__
