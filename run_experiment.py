@@ -25,29 +25,29 @@ def round_to_multiple(n, m, func=round):
 
 
 def run_experiments(setups: Dict[str, EA_Config], exp_cfg: Exp_Config):
-    all_best_overtime   = []
-    all_worst_overtime  = []
+    all_fitnesses_overtime = []
+
     all_iterations      = []
     all_total_times     = []
     all_iter_times      = []
 
-    n_variations = 0
 
     try:
 
         for setup_name, cfg in setups.items():
-            n_variations += 1
 
             print(setup_name)
 
-            best_overtime   = [[] for _ in range(exp_cfg.n_experiments)]
-            worst_overtime  = [[] for _ in range(exp_cfg.n_experiments)]
+            fitnesses_overtime = [[] for _ in range(exp_cfg.n_experiments)]
+
             iter_times      = [[] for _ in range(exp_cfg.n_experiments)]
             total_times     = []
             iterations      = []
 
             for n_repeat in range(exp_cfg.n_experiments):
                 ga = gen_ga(cfg)
+
+                stuck_counter = 0
 
                 exp_start_time = time()
 
@@ -56,11 +56,14 @@ def run_experiments(setups: Dict[str, EA_Config], exp_cfg: Exp_Config):
 
                     ga.generation()
 
-                    worst   = max(s.f for s in ga.population)
-                    best    = min(s.f for s in ga.population)
+                    fitnesses = [s.f for s in ga.population]
 
-                    best_overtime[n_repeat].append(best)
-                    worst_overtime[n_repeat].append(worst)
+                    worst   = max(fitnesses)
+                    best    = min(fitnesses)
+
+                    fitnesses_overtime[n_repeat].append(fitnesses)
+
+
                     iter_times[n_repeat].append(time() - iter_start_time)
 
                     print(" " * 100, end="\r")
@@ -68,35 +71,38 @@ def run_experiments(setups: Dict[str, EA_Config], exp_cfg: Exp_Config):
 
 
                     if abs(worst - best) < exp_cfg.epsilon:
-                        break
+                        stuck_counter += 1
+
+                        if stuck_counter >= cfg.n_stuck:
+                            break
+                    else:
+                        stuck_counter = 0
                 
                 iterations.append(i)
                 total_times.append(time() - exp_start_time)
+
             
-            avg_best, error_best        = tolerant_mean(best_overtime)
-            avg_worst, error_worst      = tolerant_mean(worst_overtime)
             avg_iter_times, error_iter  = tolerant_mean(iter_times)
             
+            all_fitnesses_overtime.append(fitnesses_overtime)
 
-            all_best_overtime   .append(avg_best.tolist())
-            all_worst_overtime  .append(avg_worst.tolist())
             all_iter_times      .append(avg_iter_times.tolist())
             all_total_times     .append(np.mean(total_times))
             all_iterations      .append(np.mean(iterations))
 
             print(" " * 100, end="\r")
 
-            # Current best & worst
-            print("\tBest: ", avg_best[-1])
-            print("\tWorst:", avg_worst[-1])
-            print("\tDiff: ", avg_worst[-1] - avg_best[-1])
+            # # Current best & worst
+            # print("\tBest: ", avg_best[-1])
+            # print("\tWorst:", avg_worst[-1])
+            # print("\tDiff: ", avg_worst[-1] - avg_best[-1])
 
             print()
 
             with open(f"{exp_cfg.exp_name}.json", "wt") as f:
-                json.dump([all_best_overtime, all_worst_overtime, all_iterations, all_total_times, all_iter_times], f, indent=4)
+                json.dump([all_fitnesses_overtime, all_iterations, all_total_times, all_iter_times], f, indent=4)
         
     except KeyboardInterrupt:
         pass
         
-    return all_best_overtime, all_worst_overtime, all_iterations, all_total_times, all_iter_times
+    return all_fitnesses_overtime, all_iterations, all_total_times, all_iter_times
