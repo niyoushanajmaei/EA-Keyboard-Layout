@@ -1,2 +1,4 @@
 /instances/
 **/__pycache__
+graphs/
+data/*.json
