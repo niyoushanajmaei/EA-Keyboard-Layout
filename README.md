@@ -1,8 +1,31 @@
 # Keyboard Optimization & Permutations
-When using Evolutionary Algorithms, one particularly important aspect of applying such an EA is the choice of **encoding**. In many cases the encoding used is trivial, for example a mapping from positions on a  string to the variables used within evaluation. Such encodings are commonplace, and you have already (potentially unknowingly) encountered them.
 
-However, as discussed in the second lecture, the right encoding can however provide significant benefits to the performance of an EA! Specific encodings can be used to avoid infeasible solutions by construction, bias the search space towards regions of interest, or allow for better & more effective recombination. In this assignment we utilize various encodings (and crossover operators) to investigate their applicability to keyboard optimization, which requires a particularly common (yet constrained) search space: permutations.
+In our project, we focus on the keyboard optimization problem. 
+The main goals of this project are to analyze the problem structures that can be exploited by current representation and crossover operators, identify opportunities for further improvement using problem-specific knowledge, and assess the performance of our proposed enhancements. 
 
-Permutations are used to define sequences, orderings of preference, or unique one-to-one mappings. If you ever had a problem that takes such a input, we generally use a permutation to describe them. The trivial way to 'encode' permutations is a discrete search space, assigning a value 1 through the string length for each position. This approach does however not deal with the uniqueness constraint. The search space therefore also includes invalid solutions.
+Firstly, we develop a specialized crossover operator tailored specifically for the keyboard layout optimization problem. Additionally we propose two custom initialization algorithms
+to optimize the performance and convergence.
 
-In this assignment we instead investigate different approaches, each with their own benefits and downsides. One of these approaches is to require a solution to always be a valid permutation, requiring our operators to be modified to preserve this property. Alternatively, we use the Random Key encoding which uses a string of continuous variables as encoding, with the encoded permutation being the order that sorts them.
+To establish a reliable baseline, we carefully select a benchmark
+promises great performance for QAP problems without bothering with domain specific knowledge. The chosen baseline should
+demonstrate progress over time, avoid premature convergence, and
+present a challenging target to surpass. This selection ensures a
+fair evaluation of our proposed optimizations.
+
+
+## Custom Initialization
+[Frequency-based custom initialization](our_crossover_not_working/frequency_based_crossover.py) 
+
+## Custom Crossovers
+### 1. Linkage-based Crossover
+[Linkage-based crossover](our_other_crossovers_working/linkage_based_crossover.py)
+
+### 2. Region-based Crossover
+[Region-based crossover](our_other_crossovers_working/region_based_crossover.py)
+
+## Running the experiments
+[File used for testing the initialization](initialization_test.ipynb)
+
+[File used for testing the crossovers](crossover_test.ipynb)
+
+[File used for running the final experiments](plot_run_results.ipynb)
