@@ -150,40 +150,67 @@ def to_masked(x: list):
     return masked
 
 
-def plot_boxplots(fitnesses_avg, setup_names, optimal_sol=None):
+def plot_boxplots(fitnesses_avg, setup_names, optimal_sol=None, tick_size=5, lowest_val=5400000, highest_val=6300000):
     assert len(fitnesses_avg) == len(setup_names)
 
-    highest_val = np.ma.max(fitnesses_avg)
-    lowest_val = 5400000
+    max_gen_all = fitnesses_avg.shape[1]
 
     for i, setup_name in enumerate(setup_names):
         fig = plt.figure(figsize=(15, 7))
 
-        filtered_data = []
-        for x in fitnesses_avg[i].tolist(np.NaN):
-            intermediate = []
-
-            for y in x:
-                if not np.isnan(y):
-                    intermediate.append(y)
-            
-            if intermediate != []:
-                filtered_data.append(intermediate)
+        data = fitnesses_avg[i].T
+        
+        n_gen = np.max(np.count_nonzero(~data.mask, axis=1))
 
 
         if optimal_sol != None:
             plt.axhline(optimal_sol, linestyle=":", label="Optimal Solution")
-        plt.boxplot(filtered_data, showfliers=False)
-        plt.xticks(range(0, len(filtered_data) + 5, 5), labels=range(0, len(filtered_data) + 5, 5))
+        plt.boxplot(data, showfliers=False)
+        plt.xlim((0, n_gen + 1))
+        plt.xticks(range(0, n_gen + tick_size, tick_size), labels=range(0, n_gen + tick_size, tick_size))
         plt.ylim((lowest_val, highest_val))
 
         plt.ylabel("Fitness")
         plt.xlabel("Generation")
-        plt.title(f"Boxplot of different generations for {setup_name}")
+        plt.title(f"Boxplot of different generations for \n{setup_name}")
         plt.legend()
 
         plt.show()
 
+
+def plot_inverted_boxplots(fitnesses_avg, setup_names, optimal_sol=None, save_files=None, tick_size=5, lowest_val=5400000, highest_val=6300000):
+    assert len(fitnesses_avg) == len(setup_names)
+    if save_files != None:
+        assert len(setup_names) == len(save_files)
+
+    max_gen_all = fitnesses_avg.shape[1]
+
+    for i, setup_name in enumerate(setup_names):
+        fig = plt.figure(figsize=(7, 5))
+
+        data            = fitnesses_avg[i].T
+        max_gen         = max(np.count_nonzero(~data.mask, axis=1))
+
+        if optimal_sol != None:
+            plt.axvline(optimal_sol, linestyle=":", label="Optimal Solution")
+        plt.boxplot(data[:,::-1], showfliers=False, vert=False)
+
+        plt.ylim((max_gen_all - max_gen, max_gen_all + 1))
+        plt.yticks(range(max_gen_all, max_gen_all - max_gen - tick_size, -tick_size), labels=range(0, max_gen + tick_size, tick_size))
+        
+        plt.xlim((lowest_val, highest_val))
+
+        plt.ylabel("Generation")
+        plt.xlabel("Fitness")
+        plt.title(f"Boxplot of different generations for \n{setup_name}")
+        plt.legend(loc='lower right')
+
+        if save_files != None:
+            save_file = save_files[i]
+
+            plt.savefig(save_file)
+
+        plt.show()
 
 def plot_best(fitnesses_avg, setup_names, title, optimal_sol=None, legend_title=None):
     assert len(fitnesses_avg) == len(setup_names)
@@ -206,3 +233,14 @@ def plot_best(fitnesses_avg, setup_names, title, optimal_sol=None, legend_title=
 def extract_data(data, setup_idxs, setup_names):
     idxs = [setup_idxs[name] for name in setup_names]
     return np.ma.array(data[idxs])
+
+
+def gen_save_files(abs_folder, filenames, test_name, graph_type, file_type ="png"):
+    save_files = []
+
+    for filename in filenames:
+        file_path = f"{abs_folder}/graphs/{test_name}/{graph_type}"
+        file_name = filename.lower().replace(" ", "_")
+        save_files.append(f"{file_path}/{file_name}.{file_type}")
+    
+    return save_files
